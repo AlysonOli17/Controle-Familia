@@ -1,0 +1,6 @@
+{
+  "name": "FinFamily - Finanças Familiares Inteligentes",
+  "description": "Gestão financeira familiar completa com controle de receitas e despesas, metas conjuntas, sincronização bancária Open Finance, análise preditiva de gargalos, segurança biométrica e suporte offline.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

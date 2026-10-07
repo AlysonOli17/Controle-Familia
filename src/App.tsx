@@ -21,13 +21,14 @@ import {
   calculatePredictiveBudgetSummary,
   detectFinancialBottlenecks,
 } from './services/predictiveEngine';
-import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus } from './services/supabaseService';
+import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, insertFamilyMember, deleteFamilyMember } from './services/supabaseService';
 import { HeaderNav, NavTab } from './components/HeaderNav';
 import { DashboardOverview } from './components/DashboardOverview';
 import { TransactionsManager } from './components/TransactionsManager';
 import { GoalsManager } from './components/GoalsManager';
 
 import { InvestmentsManager } from './components/InvestmentsManager';
+import { MembersManager } from './components/MembersManager';
 import { BottlenecksAndAIMenu } from './components/BottlenecksAndAIMenu';
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { BiometricLockModal } from './components/BiometricLockModal';
@@ -232,6 +233,27 @@ export default function App() {
 
 
 
+  // Gerenciar Membros
+  const handleAddMember = async (newMember: Omit<FamilyMember, 'id'>) => {
+    try {
+      const dbMember = await insertFamilyMember(newMember);
+      setMembers((prev) => [...prev, dbMember]);
+    } catch (e) {
+      console.error('Erro ao adicionar membro', e);
+      alert('Erro ao salvar o membro no banco de dados.');
+    }
+  };
+
+  const handleDeleteMember = async (id: string) => {
+    try {
+      await deleteFamilyMember(id);
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+    } catch (e) {
+      console.error('Erro ao excluir membro', e);
+      alert('Erro ao excluir membro do banco de dados. Pode haver transações vinculadas a ele.');
+    }
+  };
+
   // Criar nova meta
   const handleAddGoal = (newGoal: Omit<SavingsGoal, 'id' | 'createdAt' | 'history'>) => {
     const goal: SavingsGoal = {
@@ -390,6 +412,14 @@ export default function App() {
           />
         )}
 
+
+        {currentTab === 'members' && (
+          <MembersManager
+            members={members}
+            onAddMember={handleAddMember}
+            onDeleteMember={handleDeleteMember}
+          />
+        )}
 
         {currentTab === 'investments' && (
           <InvestmentsManager

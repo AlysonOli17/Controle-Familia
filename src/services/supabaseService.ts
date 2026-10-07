@@ -147,3 +147,31 @@ export async function updateBankAccountBalance(id: string, newBalance: number) {
   const { error } = await supabase.from('bank_accounts').update({ balance: newBalance }).eq('id', id);
   if (error) throw error;
 }
+
+export async function insertFamilyMember(member: Omit<FamilyMember, 'id'>) {
+  const { data, error } = await supabase.from('family_members').insert({
+    name: member.name,
+    role: member.role,
+    monthly_budget_limit: member.monthlyBudgetLimit,
+    avatar_color: member.avatarColor,
+    avatar_initials: member.avatarInitials,
+    email: member.email,
+  }).select().single();
+
+  if (error) throw error;
+  
+  return {
+    id: data.id,
+    name: data.name,
+    role: data.role,
+    monthlyBudgetLimit: data.monthly_budget_limit,
+    avatarColor: data.avatar_color,
+    avatarInitials: data.avatar_initials,
+    email: data.email,
+  } as FamilyMember;
+}
+
+export async function deleteFamilyMember(id: string) {
+  const { error } = await supabase.from('family_members').delete().eq('id', id);
+  if (error) throw error;
+}

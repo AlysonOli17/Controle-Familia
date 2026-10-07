@@ -17,6 +17,7 @@ export type NavTab =
   | 'transactions'
   | 'goals'
   | 'banks'
+  | 'members'
   | 'investments'
   | 'bottlenecks';
 
@@ -50,6 +51,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
     { id: 'overview', label: 'Visão Geral' },
     { id: 'transactions', label: 'Lançamentos' },
     { id: 'goals', label: 'Metas' },
+    { id: 'members', label: 'Família' },
     { id: 'investments', label: 'Investimentos' },
     { id: 'bottlenecks', label: 'Gargalos & IA' },
   ];

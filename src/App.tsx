@@ -22,7 +22,7 @@ import {
   detectFinancialBottlenecks,
 } from './services/predictiveEngine';
 import { encryptAndSaveData, loadAndDecryptData } from './services/cryptoStorage';
-import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, insertFamilyMember, deleteFamilyMember } from './services/supabaseService';
+import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, insertFamilyMember, deleteFamilyMember, updateFamilyMember } from './services/supabaseService';
 import { HeaderNav, NavTab } from './components/HeaderNav';
 import { DashboardOverview } from './components/DashboardOverview';
 import { TransactionsManager } from './components/TransactionsManager';
@@ -255,6 +255,16 @@ export default function App() {
     }
   };
 
+  const handleEditMember = async (id: string, updates: Partial<Omit<FamilyMember, 'id'>>) => {
+    try {
+      const updatedMember = await updateFamilyMember(id, updates);
+      setMembers((prev) => prev.map((m) => (m.id === id ? updatedMember : m)));
+    } catch (e) {
+      console.error('Erro ao atualizar membro', e);
+      alert('Erro ao atualizar o membro no banco de dados.');
+    }
+  };
+
   // Criar nova meta
   const handleAddGoal = (newGoal: Omit<SavingsGoal, 'id' | 'createdAt' | 'history'>) => {
     const goal: SavingsGoal = {
@@ -419,6 +429,7 @@ export default function App() {
             members={members}
             onAddMember={handleAddMember}
             onDeleteMember={handleDeleteMember}
+            onEditMember={handleEditMember}
           />
         )}
 

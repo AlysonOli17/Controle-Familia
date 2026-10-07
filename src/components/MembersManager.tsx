@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Users, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Users, AlertCircle, Pencil } from 'lucide-react';
 import { FamilyMember } from '../types/finance';
 
 interface MembersManagerProps {
   members: FamilyMember[];
   onAddMember: (member: Omit<FamilyMember, 'id'>) => void;
   onDeleteMember: (id: string) => void;
+  onEditMember: (id: string, member: Partial<Omit<FamilyMember, 'id'>>) => void;
 }
 
 const AVATAR_COLORS = [
@@ -19,8 +20,10 @@ const AVATAR_COLORS = [
   'bg-violet-500'
 ];
 
-export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMember, onDeleteMember }) => {
+export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMember, onDeleteMember, onEditMember }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
   const [name, setName] = useState('');
   const [role, setRole] = useState<FamilyMember['role']>('Membro' as any);
   const [monthlyBudgetLimit, setMonthlyBudgetLimit] = useState('');
@@ -38,22 +41,48 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMe
       .join('')
       .toUpperCase();
 
-    onAddMember({
-      name: name.trim(),
-      role,
-      monthlyBudgetLimit: Number(monthlyBudgetLimit) || 0,
-      avatarColor: color,
-      avatarInitials: initials,
-      email: email.trim() || undefined,
-    });
+    if (editingId) {
+      onEditMember(editingId, {
+        name: name.trim(),
+        role,
+        monthlyBudgetLimit: Number(monthlyBudgetLimit) || 0,
+        avatarColor: color,
+        avatarInitials: initials,
+        email: email.trim() || undefined,
+      });
+    } else {
+      onAddMember({
+        name: name.trim(),
+        role,
+        monthlyBudgetLimit: Number(monthlyBudgetLimit) || 0,
+        avatarColor: color,
+        avatarInitials: initials,
+        email: email.trim() || undefined,
+      });
+    }
 
-    // Reset
+    resetForm();
+  };
+
+  const resetForm = () => {
     setName('');
     setRole('Membro' as any);
     setMonthlyBudgetLimit('');
     setEmail('');
     setColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
     setIsAdding(false);
+    setEditingId(null);
+  };
+
+  const handleEditClick = (m: FamilyMember) => {
+    setEditingId(m.id);
+    setName(m.name);
+    setRole(m.role);
+    setMonthlyBudgetLimit(m.monthlyBudgetLimit ? m.monthlyBudgetLimit.toString() : '');
+    setEmail(m.email || '');
+    setColor(m.avatarColor);
+    setIsAdding(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -69,7 +98,13 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMe
           </p>
         </div>
         <button
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => {
+            if (isAdding) {
+              resetForm();
+            } else {
+              setIsAdding(true);
+            }
+          }}
           className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs w-fit"
         >
           <Plus className="w-4 h-4" />
@@ -79,7 +114,9 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMe
 
       {isAdding && (
         <form onSubmit={handleSubmit} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm animate-in fade-in slide-in-from-top-4">
-          <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Adicionar Novo Membro</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-3">
+            {editingId ? 'Editar Membro' : 'Adicionar Novo Membro'}
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome Completo</label>
@@ -145,7 +182,7 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMe
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
-              onClick={() => setIsAdding(false)}
+              onClick={resetForm}
               className="px-4 py-2 text-xs font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               Cancelar
@@ -154,7 +191,7 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMe
               type="submit"
               className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              Salvar Membro
+              {editingId ? 'Atualizar Membro' : 'Salvar Membro'}
             </button>
           </div>
         </form>
@@ -175,17 +212,26 @@ export const MembersManager: React.FC<MembersManagerProps> = ({ members, onAddMe
                 )}
               </div>
             </div>
-            <button
-              onClick={() => {
-                if (window.confirm(`Tem certeza que deseja excluir o membro ${member.name}?`)) {
-                  onDeleteMember(member.id);
-                }
-              }}
-              className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors"
-              title="Excluir membro"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={() => handleEditClick(member)}
+                className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-md transition-colors"
+                title="Editar membro"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(`Tem certeza que deseja excluir o membro ${member.name}?`)) {
+                    onDeleteMember(member.id);
+                  }
+                }}
+                className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors"
+                title="Excluir membro"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         ))}
         {members.length === 0 && (

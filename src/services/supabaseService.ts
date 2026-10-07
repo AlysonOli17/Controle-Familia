@@ -178,3 +178,27 @@ export async function deleteFamilyMember(id: string) {
   const { error } = await supabase.from('family_members').delete().eq('id', id);
   if (error) throw error;
 }
+
+export async function updateFamilyMember(id: string, member: Partial<Omit<FamilyMember, 'id'>>) {
+  const updates: any = {};
+  if (member.name !== undefined) updates.name = member.name;
+  if (member.role !== undefined) updates.role = member.role;
+  if (member.monthlyBudgetLimit !== undefined) updates.monthly_budget_limit = member.monthlyBudgetLimit;
+  if (member.avatarColor !== undefined) updates.avatar_color = member.avatarColor;
+  if (member.avatarInitials !== undefined) updates.avatar_initials = member.avatarInitials;
+  if (member.email !== undefined) updates.email = member.email;
+
+  const { data, error } = await supabase.from('family_members').update(updates).eq('id', id).select().single();
+  
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    name: data.name,
+    role: data.role,
+    monthlyBudgetLimit: data.monthly_budget_limit,
+    avatarColor: data.avatar_color,
+    avatarInitials: data.avatar_initials,
+    email: data.email,
+  } as FamilyMember;
+}

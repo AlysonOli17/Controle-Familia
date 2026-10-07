@@ -23,6 +23,7 @@ import {
 } from './services/predictiveEngine';
 import { simulateOpenFinanceSync } from './services/bankSync';
 import { encryptAndSaveData, loadAndDecryptData } from './services/cryptoStorage';
+import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, insertBankAccount, updateBankAccountBalance } from './services/supabaseService';
 import { HeaderNav, NavTab } from './components/HeaderNav';
 import { DashboardOverview } from './components/DashboardOverview';
 import { TransactionsManager } from './components/TransactionsManager';
@@ -67,13 +68,13 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Main Finance Data States
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
-  const [accounts, setAccounts] = useState<BankAccount[]>(initialBankAccounts);
-  const [members] = useState<FamilyMember[]>(initialFamilyMembers);
-  const [goals, setGoals] = useState<SavingsGoal[]>(initialSavingsGoals);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>(initialCategoryBudgets);
-  const [investments, setInvestments] = useState<InvestmentAsset[]>(initialInvestmentAssets);
-  const [notifications, setNotifications] = useState<SmartNotification[]>(initialNotifications);
+  const [investments, setInvestments] = useState<InvestmentAsset[]>([]);
+  const [notifications, setNotifications] = useState<SmartNotification[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Efeito do tema no elemento HTML raiz
@@ -98,21 +99,25 @@ export default function App() {
     };
   }, []);
 
-  // Carregar dados salvos criptografados na inicialização
+  // Carregar dados reais do Supabase na inicialização
   useEffect(() => {
     async function loadSavedData() {
       try {
+        const data = await fetchAllData();
+        setTransactions(data.transactions);
+        setAccounts(data.accounts);
+        setMembers(data.members);
+        setGoals(data.goals);
+        setInvestments(data.investments);
+        
+        // Mantemos os orçamentos e notificações no storage local temporariamente (podem ir pro Supabase depois)
         const decrypted = await loadAndDecryptData<AppStorageState>();
         if (decrypted) {
-          if (decrypted.transactions) setTransactions(decrypted.transactions);
-          if (decrypted.accounts) setAccounts(decrypted.accounts);
-          if (decrypted.goals) setGoals(decrypted.goals);
           if (decrypted.budgets) setBudgets(decrypted.budgets);
-          if (decrypted.investments) setInvestments(decrypted.investments);
           if (decrypted.notifications) setNotifications(decrypted.notifications);
         }
       } catch (e) {
-        console.warn('Usando dados padrão:', e);
+        console.error('Erro ao buscar dados do Supabase:', e);
       } finally {
         setIsLoaded(true);
       }
@@ -120,20 +125,16 @@ export default function App() {
     loadSavedData();
   }, []);
 
-  // Persistir dados criptografados sempre que houver alteração
+  // Persistir orçamentos e notificações localmente
   useEffect(() => {
     if (!isLoaded) return;
     const payload: AppStorageState = {
-      transactions,
-      accounts,
-      goals,
+      transactions: [], accounts: [], goals: [], investments: [], members: [],
       budgets,
-      investments,
       notifications,
-      members,
     };
     encryptAndSaveData(payload);
-  }, [transactions, accounts, goals, budgets, investments, notifications, members, isLoaded]);
+  }, [budgets, notifications, isLoaded]);
 
   // Motor Preditivo e Detecção de Gargalos reativos
   const predictiveSummary = useMemo(() => {
@@ -155,32 +156,30 @@ export default function App() {
   };
 
   // Adicionar novo lançamento
-  const handleSaveNewTransaction = (
+  const handleSaveNewTransaction = async (
     newTxData: Omit<Transaction, 'id' | 'createdAt'>
   ) => {
-    const newTx: Transaction = {
-      ...newTxData,
-      id: `tx-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const dbTx = await insertTransaction(newTxData);
+      
+      const newTx: Transaction = {
+        ...newTxData,
+        id: dbTx.id,
+        createdAt: dbTx.created_at,
+      };
 
-    setTransactions((prev) => [newTx, ...prev]);
+      setTransactions((prev) => [newTx, ...prev]);
 
-    // Atualizar saldo da conta vinculada se for concluída
-    if (newTx.status === 'completed') {
-      setAccounts((prev) =>
-        prev.map((acc) => {
-          if (acc.id === newTx.accountId) {
-            const delta = newTx.type === 'income' ? newTx.amount : -newTx.amount;
-            return {
-              ...acc,
-              balance: Math.round((acc.balance + delta) * 100) / 100,
-            };
-          }
-          return acc;
-        })
-      );
-    }
+      // Atualizar saldo da conta vinculada se for concluída
+      if (newTx.status === 'completed' && newTx.accountId) {
+        const account = accounts.find(a => a.id === newTx.accountId);
+        if (account) {
+          const delta = newTx.type === 'income' ? newTx.amount : -newTx.amount;
+          const newBalance = Math.round((account.balance + delta) * 100) / 100;
+          await updateBankAccountBalance(account.id, newBalance);
+          setAccounts((prev) => prev.map((acc) => acc.id === account.id ? { ...acc, balance: newBalance } : acc));
+        }
+      }
 
     // Verificar se categoria ultrapassa limite para emitir notificação anti-impulso inteligente
     if (newTx.type === 'expense') {
@@ -206,24 +205,36 @@ export default function App() {
         }
       }
     }
+    } catch (e) {
+      console.error('Erro ao salvar transação', e);
+      alert('Erro ao salvar no banco de dados');
+    }
   };
 
   // Excluir lançamento
-  const handleDeleteTransaction = (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      await deleteTransaction(id);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      console.error('Erro ao excluir', e);
+      alert('Erro ao excluir do banco de dados');
+    }
   };
 
   // Marcar conta como paga ou alternar status
-  const handleToggleStatus = (id: string) => {
-    setTransactions((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const newStatus = t.status === 'pending' ? 'completed' : 'pending';
-          return { ...t, status: newStatus };
-        }
-        return t;
-      })
-    );
+  const handleToggleStatus = async (id: string) => {
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) return;
+    const newStatus = tx.status === 'pending' ? 'completed' : 'pending';
+    
+    try {
+      await updateTransactionStatus(id, newStatus);
+      setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, status: newStatus } : t));
+    } catch(e) {
+      console.error(e);
+      alert('Erro ao atualizar status');
+    }
   };
 
   const handlePayBill = (billId: string) => {
@@ -258,16 +269,22 @@ export default function App() {
   };
 
   // Adicionar nova conta bancária
-  const handleAddAccount = (
+  const handleAddAccount = async (
     newAccount: Omit<BankAccount, 'id' | 'lastSyncAt' | 'syncStatus'>
   ) => {
-    const acc: BankAccount = {
-      ...newAccount,
-      id: `acc-${Date.now()}`,
-      lastSyncAt: new Date().toISOString(),
-      syncStatus: 'synced',
-    };
-    setAccounts((prev) => [...prev, acc]);
+    try {
+      const dbAcc = await insertBankAccount(newAccount);
+      const acc: BankAccount = {
+        ...newAccount,
+        id: dbAcc.id,
+        lastSyncAt: dbAcc.last_sync_at,
+        syncStatus: dbAcc.sync_status,
+      };
+      setAccounts((prev) => [...prev, acc]);
+    } catch (e) {
+       console.error('Erro ao criar conta', e);
+       alert('Erro ao salvar conta no banco.');
+    }
   };
 
   // Criar nova meta

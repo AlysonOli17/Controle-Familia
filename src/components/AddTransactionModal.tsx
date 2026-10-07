@@ -222,6 +222,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 onChange={(e) => setMemberId(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
+                <option value="family">Família Toda (Compartilhado)</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name} ({m.role})

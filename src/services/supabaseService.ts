@@ -61,7 +61,7 @@ export async function fetchAllData() {
       dueDate: t.due_date,
       paymentMethod: t.payment_method,
       accountId: t.account_id,
-      memberId: t.member_id,
+      memberId: t.member_id || 'family',
       status: t.status,
       isRecurring: t.is_recurring,
       notes: t.notes,
@@ -104,14 +104,17 @@ export async function insertTransaction(tx: Omit<Transaction, 'id' | 'createdAt'
     date: tx.date,
     due_date: tx.dueDate,
     payment_method: tx.paymentMethod,
-    account_id: tx.accountId,
-    member_id: tx.memberId,
+    account_id: tx.accountId || null,
+    member_id: tx.memberId === 'family' ? null : tx.memberId,
     status: tx.status,
     is_recurring: tx.isRecurring,
     notes: tx.notes,
   }).select().single();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Supabase error inserting transaction:', error);
+    throw error;
+  }
   return data;
 }
 

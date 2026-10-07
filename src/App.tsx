@@ -21,14 +21,12 @@ import {
   calculatePredictiveBudgetSummary,
   detectFinancialBottlenecks,
 } from './services/predictiveEngine';
-import { simulateOpenFinanceSync } from './services/bankSync';
-import { encryptAndSaveData, loadAndDecryptData } from './services/cryptoStorage';
-import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, insertBankAccount, updateBankAccountBalance } from './services/supabaseService';
+import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus } from './services/supabaseService';
 import { HeaderNav, NavTab } from './components/HeaderNav';
 import { DashboardOverview } from './components/DashboardOverview';
 import { TransactionsManager } from './components/TransactionsManager';
 import { GoalsManager } from './components/GoalsManager';
-import { BankSyncManager } from './components/BankSyncManager';
+
 import { InvestmentsManager } from './components/InvestmentsManager';
 import { BottlenecksAndAIMenu } from './components/BottlenecksAndAIMenu';
 import { NotificationDrawer } from './components/NotificationDrawer';
@@ -37,7 +35,7 @@ import { AddTransactionModal } from './components/AddTransactionModal';
 
 interface AppStorageState {
   transactions: Transaction[];
-  accounts: BankAccount[];
+
   goals: SavingsGoal[];
   budgets: CategoryBudget[];
   investments: InvestmentAsset[];
@@ -69,7 +67,7 @@ export default function App() {
 
   // Main Finance Data States
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>(initialCategoryBudgets);
@@ -105,7 +103,7 @@ export default function App() {
       try {
         const data = await fetchAllData();
         setTransactions(data.transactions);
-        setAccounts(data.accounts);
+
         setMembers(data.members);
         setGoals(data.goals);
         setInvestments(data.investments);
@@ -129,7 +127,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     const payload: AppStorageState = {
-      transactions: [], accounts: [], goals: [], investments: [], members: [],
+      transactions: [], goals: [], investments: [], members: [],
       budgets,
       notifications,
     };
@@ -170,16 +168,7 @@ export default function App() {
 
       setTransactions((prev) => [newTx, ...prev]);
 
-      // Atualizar saldo da conta vinculada se for concluída
-      if (newTx.status === 'completed' && newTx.accountId) {
-        const account = accounts.find(a => a.id === newTx.accountId);
-        if (account) {
-          const delta = newTx.type === 'income' ? newTx.amount : -newTx.amount;
-          const newBalance = Math.round((account.balance + delta) * 100) / 100;
-          await updateBankAccountBalance(account.id, newBalance);
-          setAccounts((prev) => prev.map((acc) => acc.id === account.id ? { ...acc, balance: newBalance } : acc));
-        }
-      }
+
 
     // Verificar se categoria ultrapassa limite para emitir notificação anti-impulso inteligente
     if (newTx.type === 'expense') {
@@ -241,51 +230,7 @@ export default function App() {
     handleToggleStatus(billId);
   };
 
-  // Sincronização automática com Open Finance
-  const handleSyncAllAccounts = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await simulateOpenFinanceSync(accounts, transactions);
-      setAccounts(result.updatedAccounts);
-      if (result.newTransactions.length > 0) {
-        setTransactions((prev) => [...result.newTransactions, ...prev]);
 
-        // Gerar notificação de sucesso
-        const notif: SmartNotification = {
-          id: `sync-notif-${Date.now()}`,
-          title: 'Sincronização Open Finance Concluída',
-          message: `${result.totalSyncedCount} novas transações conciliadas e categorizadas automaticamente.`,
-          type: 'sync_success',
-          severity: 'success',
-          timestamp: new Date().toISOString(),
-          read: false,
-          actionType: 'view_bank',
-        };
-        setNotifications((prev) => [notif, ...prev]);
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // Adicionar nova conta bancária
-  const handleAddAccount = async (
-    newAccount: Omit<BankAccount, 'id' | 'lastSyncAt' | 'syncStatus'>
-  ) => {
-    try {
-      const dbAcc = await insertBankAccount(newAccount);
-      const acc: BankAccount = {
-        ...newAccount,
-        id: dbAcc.id,
-        lastSyncAt: dbAcc.last_sync_at,
-        syncStatus: dbAcc.sync_status,
-      };
-      setAccounts((prev) => [...prev, acc]);
-    } catch (e) {
-       console.error('Erro ao criar conta', e);
-       alert('Erro ao salvar conta no banco.');
-    }
-  };
 
   // Criar nova meta
   const handleAddGoal = (newGoal: Omit<SavingsGoal, 'id' | 'createdAt' | 'history'>) => {
@@ -419,7 +364,7 @@ export default function App() {
             goals={goals}
             budgets={budgets}
             bottlenecks={bottlenecks}
-            accounts={accounts}
+
             onNavigateTab={setCurrentTab}
             onOpenAddModal={() => setIsAddModalOpen(true)}
           />
@@ -428,7 +373,7 @@ export default function App() {
         {currentTab === 'transactions' && (
           <TransactionsManager
             transactions={transactions}
-            accounts={accounts}
+
             members={members}
             onAddTransactionClick={() => setIsAddModalOpen(true)}
             onDeleteTransaction={handleDeleteTransaction}
@@ -445,14 +390,6 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'banks' && (
-          <BankSyncManager
-            accounts={accounts}
-            onSyncAll={handleSyncAllAccounts}
-            isSyncing={isSyncing}
-            onAddAccount={handleAddAccount}
-          />
-        )}
 
         {currentTab === 'investments' && (
           <InvestmentsManager
@@ -486,7 +423,7 @@ export default function App() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleSaveNewTransaction}
-        accounts={accounts}
+
         members={members}
       />
 

@@ -22,7 +22,7 @@ import {
   TransactionCategory,
 } from '../types/finance';
 import { exportTransactionsToCSV, printFinancialReportPDF } from '../services/exportService';
-import { BankAccount } from '../types/finance';
+
 
 interface DashboardOverviewProps {
   summary: PredictiveBudgetSummary;
@@ -31,7 +31,7 @@ interface DashboardOverviewProps {
   goals: SavingsGoal[];
   budgets: CategoryBudget[];
   bottlenecks: FinancialBottleneck[];
-  accounts: BankAccount[];
+
   onNavigateTab: (tab: any) => void;
   onOpenAddModal: () => void;
 }
@@ -60,7 +60,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   goals,
   budgets,
   bottlenecks,
-  accounts,
+
   onNavigateTab,
   onOpenAddModal,
 }) => {
@@ -156,7 +156,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* Quick export actions */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => exportTransactionsToCSV(transactions, accounts, members)}
+            onClick={() => exportTransactionsToCSV(transactions, [], members)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
             title="Exportar todas as transações em CSV para Excel"
           >

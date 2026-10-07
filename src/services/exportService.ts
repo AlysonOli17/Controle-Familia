@@ -12,10 +12,10 @@ import {
  */
 export function exportTransactionsToCSV(
   transactions: Transaction[],
-  accounts: BankAccount[],
+  _accounts: any[], // unused
   members: FamilyMember[]
 ): void {
-  const accountMap = new Map(accounts.map((a) => [a.id, a.institutionName]));
+
   const memberMap = new Map(members.map((m) => [m.id, m.name]));
 
   const headers = [
@@ -26,7 +26,7 @@ export function exportTransactionsToCSV(
     'Categoria',
     'Valor (R$)',
     'Forma de Pagamento',
-    'Conta Bancária',
+
     'Membro Responsável',
     'Status',
     'Recorrente',
@@ -47,7 +47,7 @@ export function exportTransactionsToCSV(
     escapeCSV(t.category),
     escapeCSV(t.amount.toFixed(2).replace('.', ',')),
     escapeCSV(t.paymentMethod),
-    escapeCSV(accountMap.get(t.accountId) || 'Outra'),
+
     escapeCSV(memberMap.get(t.memberId) || 'Família'),
     escapeCSV(t.status === 'completed' ? 'Concluída' : 'Pendente'),
     escapeCSV(t.isRecurring ? 'Sim' : 'Não'),

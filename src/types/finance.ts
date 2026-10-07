@@ -57,7 +57,7 @@ export interface Transaction {
   category: TransactionCategory;
   date: string; // YYYY-MM-DD
   paymentMethod: PaymentMethod;
-  accountId: string;
+  accountId?: string;
   memberId: string;
   status: 'completed' | 'pending';
   dueDate?: string; // YYYY-MM-DD for pending bills

@@ -50,7 +50,6 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
     { id: 'overview', label: 'Visão Geral' },
     { id: 'transactions', label: 'Lançamentos' },
     { id: 'goals', label: 'Metas' },
-    { id: 'banks', label: 'Bancos' },
     { id: 'investments', label: 'Investimentos' },
     { id: 'bottlenecks', label: 'Gargalos & IA' },
   ];

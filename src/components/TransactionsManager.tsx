@@ -21,7 +21,6 @@ import { exportTransactionsToCSV } from '../services/exportService';
 
 interface TransactionsManagerProps {
   transactions: Transaction[];
-  accounts: BankAccount[];
   members: FamilyMember[];
   onAddTransactionClick: () => void;
   onDeleteTransaction: (id: string) => void;
@@ -30,7 +29,6 @@ interface TransactionsManagerProps {
 
 export const TransactionsManager: React.FC<TransactionsManagerProps> = ({
   transactions,
-  accounts,
   members,
   onAddTransactionClick,
   onDeleteTransaction,
@@ -41,7 +39,7 @@ export const TransactionsManager: React.FC<TransactionsManagerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedMember, setSelectedMember] = useState<string>('all');
 
-  const accountMap = new Map(accounts.map((a) => [a.id, a.institutionName]));
+
   const memberMap = new Map(members.map((m) => [m.id, m]));
 
   const filtered = transactions.filter((t) => {
@@ -100,7 +98,7 @@ export const TransactionsManager: React.FC<TransactionsManagerProps> = ({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => exportTransactionsToCSV(transactions, accounts, members)}
+            onClick={() => exportTransactionsToCSV(transactions, [], members)}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
@@ -225,7 +223,6 @@ export const TransactionsManager: React.FC<TransactionsManagerProps> = ({
                 <th className="py-3 px-4">Data</th>
                 <th className="py-3 px-4">Descrição & Categoria</th>
                 <th className="py-3 px-4">Responsável</th>
-                <th className="py-3 px-4">Conta / Origem</th>
                 <th className="py-3 px-4 text-right">Valor</th>
                 <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 text-right">Ações</th>
@@ -294,10 +291,6 @@ export const TransactionsManager: React.FC<TransactionsManagerProps> = ({
                         </div>
                       </td>
 
-                      {/* Conta */}
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
-                        {accountMap.get(tx.accountId) || 'Caixa'}
-                      </td>
 
                       {/* Valor (Tabular Figures) */}
                       <td

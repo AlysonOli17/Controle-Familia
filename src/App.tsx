@@ -21,6 +21,7 @@ import {
   calculatePredictiveBudgetSummary,
   detectFinancialBottlenecks,
 } from './services/predictiveEngine';
+import { encryptAndSaveData, loadAndDecryptData } from './services/cryptoStorage';
 import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, insertFamilyMember, deleteFamilyMember } from './services/supabaseService';
 import { HeaderNav, NavTab } from './components/HeaderNav';
 import { DashboardOverview } from './components/DashboardOverview';

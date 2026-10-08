@@ -128,6 +128,30 @@ export async function updateTransactionStatus(id: string, status: string) {
   if (error) throw error;
 }
 
+export async function updateTransaction(id: string, tx: Partial<Omit<Transaction, 'id' | 'createdAt'>>) {
+  const updates: any = {};
+  if (tx.description !== undefined) updates.description = tx.description;
+  if (tx.amount !== undefined) updates.amount = tx.amount;
+  if (tx.type !== undefined) updates.type = tx.type;
+  if (tx.category !== undefined) updates.category = tx.category;
+  if (tx.date !== undefined) updates.date = tx.date;
+  if (tx.dueDate !== undefined) updates.due_date = tx.dueDate;
+  if (tx.paymentMethod !== undefined) updates.payment_method = tx.paymentMethod;
+  if (tx.accountId !== undefined) updates.account_id = tx.accountId || null;
+  if (tx.memberId !== undefined) updates.member_id = tx.memberId === 'family' ? null : tx.memberId;
+  if (tx.status !== undefined) updates.status = tx.status;
+  if (tx.isRecurring !== undefined) updates.is_recurring = tx.isRecurring;
+  if (tx.notes !== undefined) updates.notes = tx.notes;
+
+  const { data, error } = await supabase.from('transactions').update(updates).eq('id', id).select().single();
+  
+  if (error) {
+    console.error('Supabase error updating transaction:', error);
+    throw error;
+  }
+  return data;
+}
+
 export async function insertBankAccount(acc: Omit<BankAccount, 'id' | 'lastSyncAt' | 'syncStatus'>) {
   const { data, error } = await supabase.from('bank_accounts').insert({
     institution_name: acc.institutionName,

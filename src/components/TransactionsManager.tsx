@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   Download,
   Filter,
+  Edit2,
 } from 'lucide-react';
 import {
   BankAccount,
@@ -23,6 +24,7 @@ interface TransactionsManagerProps {
   transactions: Transaction[];
   members: FamilyMember[];
   onAddTransactionClick: () => void;
+  onEditTransactionClick: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
   onToggleStatus: (id: string) => void;
 }
@@ -31,6 +33,7 @@ export const TransactionsManager: React.FC<TransactionsManagerProps> = ({
   transactions,
   members,
   onAddTransactionClick,
+  onEditTransactionClick,
   onDeleteTransaction,
   onToggleStatus,
 }) => {
@@ -329,13 +332,22 @@ export const TransactionsManager: React.FC<TransactionsManagerProps> = ({
 
                       {/* Ações */}
                       <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => onDeleteTransaction(tx.id)}
-                          className="p-1 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          title="Excluir lançamento"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => onEditTransactionClick(tx)}
+                            className="p-1 rounded-md text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Editar lançamento"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteTransaction(tx.id)}
+                            className="p-1 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Excluir lançamento"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

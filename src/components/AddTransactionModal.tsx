@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, PlusCircle } from 'lucide-react';
+import { X, Sparkles, PlusCircle, Edit2 } from 'lucide-react';
 import {
   BankAccount,
   FamilyMember,
@@ -14,6 +14,8 @@ interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  onEdit?: (id: string, transaction: Partial<Omit<Transaction, 'id' | 'createdAt'>>) => void;
+  initialData?: Transaction | null;
   members: FamilyMember[];
 }
 
@@ -38,6 +40,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onEdit,
+  initialData,
   members,
 }) => {
   if (!isOpen) return null;
@@ -55,6 +59,34 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [notes, setNotes] = useState('');
   const [suggestedCat, setSuggestedCat] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialData && isOpen) {
+      setType(initialData.type);
+      setDescription(initialData.description);
+      setAmount(initialData.amount.toString());
+      setCategory(initialData.category);
+      setDate(initialData.date);
+      setDueDate(initialData.dueDate || '');
+      setPaymentMethod(initialData.paymentMethod);
+      setMemberId(initialData.memberId || 'family');
+      setIsPending(initialData.status === 'pending');
+      setIsRecurring(initialData.isRecurring || false);
+      setNotes(initialData.notes || '');
+    } else if (isOpen && !initialData) {
+      setType('expense');
+      setDescription('');
+      setAmount('');
+      setCategory('Supermercado');
+      setDate(new Date().toISOString().split('T')[0]);
+      setDueDate('');
+      setPaymentMethod('credit_card');
+      setMemberId('family');
+      setIsPending(false);
+      setIsRecurring(false);
+      setNotes('');
+    }
+  }, [initialData, isOpen]);
 
   // Sugestão de categorização automática em tempo real conforme digita o nome
   useEffect(() => {
@@ -82,7 +114,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const parsedAmount = parseFloat(amount);
     if (!description.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return;
 
-    onSave({
+    const txData = {
       description: description.trim(),
       amount: parsedAmount,
       type,
@@ -91,10 +123,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       dueDate: isPending ? (dueDate || date) : undefined,
       paymentMethod,
       memberId,
-      status: isPending ? 'pending' : 'completed',
+      status: (isPending ? 'pending' : 'completed') as 'pending' | 'completed',
       isRecurring,
       notes: notes.trim() || undefined,
-    });
+    };
+
+    if (initialData && onEdit) {
+      onEdit(initialData.id, txData);
+    } else {
+      onSave(txData);
+    }
 
     onClose();
   };
@@ -104,8 +142,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-150 my-8">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-emerald-600" />
-            <span>Novo Lançamento Financeiro</span>
+            {initialData ? (
+              <Edit2 className="w-5 h-5 text-emerald-600" />
+            ) : (
+              <PlusCircle className="w-5 h-5 text-emerald-600" />
+            )}
+            <span>{initialData ? 'Editar Lançamento' : 'Novo Lançamento Financeiro'}</span>
           </h3>
           <button
             onClick={onClose}
@@ -333,7 +375,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               type="submit"
               className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
             >
-              Adicionar Lançamento
+              {initialData ? 'Salvar Alterações' : 'Adicionar Lançamento'}
             </button>
           </div>
         </form>

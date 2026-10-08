@@ -22,7 +22,7 @@ import {
   detectFinancialBottlenecks,
 } from './services/predictiveEngine';
 import { encryptAndSaveData, loadAndDecryptData } from './services/cryptoStorage';
-import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, insertFamilyMember, deleteFamilyMember, updateFamilyMember } from './services/supabaseService';
+import { fetchAllData, insertTransaction, deleteTransaction, updateTransactionStatus, updateTransaction, insertFamilyMember, deleteFamilyMember, updateFamilyMember } from './services/supabaseService';
 import { HeaderNav, NavTab } from './components/HeaderNav';
 import { DashboardOverview } from './components/DashboardOverview';
 import { TransactionsManager } from './components/TransactionsManager';
@@ -64,6 +64,7 @@ export default function App() {
 
   // Modals & Drawers
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -210,6 +211,17 @@ export default function App() {
     } catch (e) {
       console.error('Erro ao excluir', e);
       alert('Erro ao excluir do banco de dados');
+    }
+  };
+
+  // Editar lançamento
+  const handleEditTransaction = async (id: string, updates: Partial<Omit<Transaction, 'id' | 'createdAt'>>) => {
+    try {
+      await updateTransaction(id, updates);
+      setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    } catch (e) {
+      console.error('Erro ao editar', e);
+      alert('Erro ao editar no banco de dados');
     }
   };
 
@@ -380,7 +392,10 @@ export default function App() {
         onSelectTab={setCurrentTab}
         notifications={notifications}
         onOpenNotifications={() => setIsNotificationDrawerOpen(true)}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenAddModal={() => {
+          setTransactionToEdit(null);
+          setIsAddModalOpen(true);
+        }}
         onLockApp={() => setIsLocked(true)}
         theme={theme}
         onToggleTheme={handleToggleTheme}
@@ -399,7 +414,10 @@ export default function App() {
             bottlenecks={bottlenecks}
 
             onNavigateTab={setCurrentTab}
-            onOpenAddModal={() => setIsAddModalOpen(true)}
+            onOpenAddModal={() => {
+              setTransactionToEdit(null);
+              setIsAddModalOpen(true);
+            }}
           />
         )}
 
@@ -408,7 +426,14 @@ export default function App() {
             transactions={transactions}
 
             members={members}
-            onAddTransactionClick={() => setIsAddModalOpen(true)}
+            onAddTransactionClick={() => {
+              setTransactionToEdit(null);
+              setIsAddModalOpen(true);
+            }}
+            onEditTransactionClick={(tx) => {
+              setTransactionToEdit(tx);
+              setIsAddModalOpen(true);
+            }}
             onDeleteTransaction={handleDeleteTransaction}
             onToggleStatus={handleToggleStatus}
           />
@@ -463,9 +488,13 @@ export default function App() {
       {/* Modal: Novo Lançamento */}
       <AddTransactionModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setTransactionToEdit(null);
+        }}
         onSave={handleSaveNewTransaction}
-
+        onEdit={handleEditTransaction}
+        initialData={transactionToEdit}
         members={members}
       />
 

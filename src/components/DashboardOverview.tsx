@@ -102,9 +102,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   });
 
   // Contas pendentes a vencer logo
-  const upcomingBills = transactions
-    .filter((t) => t.status === 'pending' && t.type === 'expense')
-    .slice(0, 3);
+  const pendingExpenses = transactions.filter(
+    (t) => t.status === 'pending' && t.type === 'expense'
+  );
+  const totalPendingVal = pendingExpenses.reduce((acc, t) => acc + t.amount, 0);
+
+  const upcomingBills = pendingExpenses.slice(0, 3);
 
   // Donut SVG Math
   let cumulativeAngle = 0;
@@ -176,7 +179,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       </div>
 
       {/* Main KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Receitas */}
         <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
           <div className="flex items-center justify-between">
@@ -251,6 +254,24 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
               {summary.savingsRateForecastPercent}%
             </span>
+          </div>
+        </div>
+
+        {/* Contas Pendentes */}
+        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/10 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-400">
+              A Pagar
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <AlertCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 text-2xl font-bold font-mono tracking-tight text-amber-800 dark:text-amber-400">
+            R$ {totalPendingVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-700/70 dark:text-amber-400/70">
+            <span>{pendingExpenses.length} contas pendentes</span>
           </div>
         </div>
       </div>
